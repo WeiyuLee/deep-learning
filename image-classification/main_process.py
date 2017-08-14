@@ -134,18 +134,40 @@ batch_size = 32
 keep_probability = 0.75
 
 # Train on a Single CIFAR-10 Batch
-print('Checking the Training on a Single Batch...')
+#print('Checking the Training on a Single Batch...')
+#with tf.Session() as sess:
+#    # Initializing the variables
+#    sess.run(tf.global_variables_initializer())
+#    
+#    # Training cycle
+#    for epoch in range(epochs):
+#        batch_i = 1
+#        for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
+#            print(len(batch_features), len(batch_labels))
+#            #train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
+#        print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
+#        print_stats(sess, batch_features, batch_labels, cost, accuracy)
+        
+save_model_path = './image_classification'
+
+print('Training...')
 with tf.Session() as sess:
     # Initializing the variables
     sess.run(tf.global_variables_initializer())
     
     # Training cycle
     for epoch in range(epochs):
-        batch_i = 1
-        for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
-            train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
-        print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
-        print_stats(sess, batch_features, batch_labels, cost, accuracy)
+        # Loop over all batches
+        n_batches = 5
+        for batch_i in range(1, n_batches + 1):
+            for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
+                train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
+            print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
+            print_stats(sess, batch_features, batch_labels, cost, accuracy)
+            
+    # Save Model
+    saver = tf.train.Saver()
+    save_path = saver.save(sess, save_model_path)
         
         
 
