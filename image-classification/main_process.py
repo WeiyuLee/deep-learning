@@ -99,6 +99,9 @@ fully_outputs.append(1200)
 # DNN Layer 3
 fully_outputs.append(325)
 
+# Final Output Layer
+final_out = 10
+
 # Remove previous weights, bias, inputs, etc..
 tf.reset_default_graph()
 
@@ -108,8 +111,14 @@ y = NNs.neural_net_label_input(10)
 keep_prob = NNs.neural_net_keep_prob_input()
 
 # Model
+print("\n===============================================================================================")
+print("========================================Build the Model========================================")
+print("===============================================================================================")
 conv_out = NNs.conv_net(x, conv_ksize, conv_strides, conv_num_outputs, pool_ksize, pool_strides)
-fully_out = NNs.fully_net(conv_out, fully_outputs)
+fully_out = NNs.fully_net(conv_out, fully_outputs, final_out)
+print("===============================================================================================")
+print("===============================================================================================")
+print("===============================================================================================\n")
 
 # Name logits Tensor, so that is can be loaded from disk after training
 logits = tf.identity(fully_out, name='logits')
@@ -130,7 +139,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name='accuracy')
 ###### Hyperparameters #######
 ##############################
 epochs = 500
-batch_size = 32
+batch_size = 256
 keep_probability = 0.75
 
 # Train on a Single CIFAR-10 Batch

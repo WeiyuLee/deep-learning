@@ -67,14 +67,14 @@ def conv2d_maxpool(x_tensor, conv_num_outputs, conv_ksize, conv_strides, pool_ks
     bias = tf.Variable(tf.zeros([conv_num_outputs]))
     
     # Apply Convolution
-    conv_layer = tf.nn.conv2d(x_tensor, weight, [1, conv_strides[0], conv_strides[1], 1], padding='SAME') # mixa tuple and list????
+    conv_layer = tf.nn.conv2d(x_tensor, weight, [1, conv_strides[1], conv_strides[2], 1], padding='SAME') # mixa tuple and list????
     # Add bias
     conv_layer = tf.nn.bias_add(conv_layer, bias)
     # Apply activation function
     conv_layer = tf.nn.relu(conv_layer)
    
     # Set the ksize (filter size) for each dimension (batch_size, height, width, depth)   
-    return tf.nn.max_pool(conv_layer, [1, pool_ksize[0], pool_ksize[1], 1], [1, pool_strides[0], pool_strides[1], 1], 'SAME')
+    return tf.nn.max_pool(conv_layer, [1, pool_ksize[0], pool_ksize[1], 1], [1, pool_strides[1], pool_strides[2], 1], 'SAME')
 
 # Unit Test Function
 #tests.test_con_pool(conv2d_maxpool)
@@ -141,23 +141,6 @@ def conv_net(x, conv_ksize, conv_strides, conv_num_outputs, pool_ksize, pool_str
     : return: Tensor that represents logits
     """
     
-#    conv_ksize_1 = [3, 3]
-#    conv_strides_1 = [1, 1, 1, 1]
-#    conv_num_outputs_1 = 64
-#    
-#    conv_ksize_2 = [3, 3]
-#    conv_strides_2 = [1, 1, 1, 1]
-#    conv_num_outputs_2 = 128
-#    
-#    conv_ksize_3 = [3, 3]
-#    conv_strides_3 = [1, 1, 1, 1]
-#    conv_num_outputs_3 = 256
-    
-    #pool_ksize = [2, 2]
-    #pool_strides = [1, 2, 2, 1]
-    
-    #num_outputs = 2000
-    
     # TODO: Apply 1, 2, or 3 Convolution and Max Pool layers
     #    Play around with different number of outputs, kernel size and stride
     # Function Definition from Above:
@@ -166,15 +149,24 @@ def conv_net(x, conv_ksize, conv_strides, conv_num_outputs, pool_ksize, pool_str
       
     # Assign x as the 0 layer's output (1st cnn layer's input)
     CNN_out = list()
-    CNN_out.append(x)
     
     for i in range(conv_num_layers):
+        # Layer 0's input is x
         if i == 0:
-            CNN_out.append(conv2d_maxpool(x, conv_num_outputs[i], conv_ksize[i], conv_strides[i], pool_ksize[i], pool_strides[i]))
+            CNN_input = x
+        # Layer n's input is (n-1)
         else:
-            CNN_out.append(conv2d_maxpool(CNN_out[i-1], conv_num_outputs[i], conv_ksize[i], conv_strides[i], pool_ksize[i], pool_strides[i]))
-        #CNN_out_2 = conv2d_maxpool(CNN_out_1, conv_num_outputs_2, conv_ksize_2, conv_strides_2, pool_ksize, pool_strides)
-        #CNN_out_3 = conv2d_maxpool(CNN_out_2, conv_num_outputs_3, conv_ksize_3, conv_strides_3, pool_ksize, pool_strides)
+            CNN_input = CNN_out[i-1]
+            
+        CNN_out.append(conv2d_maxpool(CNN_input, conv_num_outputs[i], conv_ksize[i], conv_strides[i], pool_ksize[i], pool_strides[i]))
+        _, image_height, image_width, color_channels = CNN_input.get_shape().as_list()
+        
+        print("CNN Layer%d: Input size = (%d, %d, %d) Output depth = %d" % (i+1, image_height, image_width, color_channels, conv_num_outputs[i]))
+        print("ksize = (%d, %d), strides = (%d, %d), pool_ksize = (%d, %d), pool_strides = (%d, %d)\n" % (
+                conv_ksize[i][0], conv_ksize[i][1], 
+                conv_strides[i][1], conv_strides[i][2], 
+                pool_ksize[i][0], pool_ksize[i][1], 
+                pool_strides[i][1], pool_strides[i][2]))
 
     # TODO: Apply a Flatten Layer
     # Function Definition from Above:
@@ -184,7 +176,7 @@ def conv_net(x, conv_ksize, conv_strides, conv_num_outputs, pool_ksize, pool_str
     # TODO: return output
     return CNN_out_flatten
 
-def fully_net(x, fully_outputs):
+def fully_net(x, fully_outputs, final_out):
     # TODO: Apply 1, 2, or 3 Fully Connected Layers
     #    Play around with different number of outputs
     # Function Definition from Above:
@@ -193,53 +185,25 @@ def fully_net(x, fully_outputs):
 
     # Assign x as the 0 layer's output (1st cnn layer's input)
     DNN_out = list()
-    DNN_out.append(x)
     
     for i in range(fully_num_layers):
         if i == 0:
-            DNN_out.append(fully_conn(x, fully_outputs[i]))
+            DNN_input = x
         else:
-            DNN_out.append(fully_conn(DNN_out[i-1], fully_outputs[i]))
-        #fc_out_2 = fully_conn(fc_out_1, 1200)
-        #fc_out_3 = fully_conn(fc_out_2, 325)
+            DNN_input = DNN_out[i-1]
+
+        DNN_out.append(fully_conn(DNN_input, fully_outputs[i]))      
+        _, DNN_input_num = DNN_input.get_shape().as_list()
+
+        print("DNN Layer%d: Input size = %d Output depth = %d\n" % (i+1, DNN_input_num, fully_outputs[i]))      
     
     # TODO: Apply an Output Layer
     #    Set this to the number of classes
     # Function Definition from Above:
     #   output(x_tensor, num_outputs)
-    sys_output = output(DNN_out[-1], 10)
+    sys_output = output(DNN_out[-1], final_out)
+    print("Final Output Layer: Input size = %d Output depth = %d\n" % (fully_outputs[-1], final_out))      
     
     # TODO: return output
     return sys_output
 
-#def build_NN(x, y, conv_ksize, conv_strides, conv_num_outputs, pool_ksize, pool_strides, fully_outputs):
-#    ##############################
-#    ## Build the Neural Network ##
-#    ##############################
-#    
-#    # Remove previous weights, bias, inputs, etc..
-#    tf.reset_default_graph()
-#    
-#    # Inputs
-#    x = neural_net_image_input((32, 32, 3))
-#    y = neural_net_label_input(10)
-#    keep_prob = neural_net_keep_prob_input()
-#    
-#    # Model
-#    conv_out = conv_net(x, conv_ksize, conv_strides, conv_num_outputs, pool_ksize, pool_strides)
-#    fully_out = fully_net(conv_out, fully_outputs)
-#    
-#    # Name logits Tensor, so that is can be loaded from disk after training
-#    logits = tf.identity(fully_out, name='logits')
-#    
-#    # Loss and Optimizer
-#    softmax_logits = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
-#    cost = tf.reduce_mean(softmax_logits)
-#    optimizer = tf.train.AdamOptimizer().minimize(cost)
-#    
-#    # Accuracy
-#    correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
-#    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name='accuracy')
-
-# Unit Test Function
-#tests.test_conv_net(conv_net)
